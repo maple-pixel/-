@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <title>WebAR Cube (A-Frame)</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
+</head>
+
+<body style="margin:0;overflow:hidden;">
+  <!-- Hit-Test を有効化して AR セッションを開始 -->
+  <a-scene
+    webxr="optionalFeatures: hit-test"
+    renderer="colorManagement: true"
+    xr-mode-ui="enabled: true">
+
+    <!-- 立方体。平面が見つかるまで非表示 -->
+    <a-box id="cube" visible="false"
+           depth="0.2" height="0.2" width="0.2"
+           material="color:#4CC3D9">
+    </a-box>
+
+    <script>
+      const scene = document.querySelector('a-scene');
+      const cube  = document.getElementById('cube');
+
+      scene.renderer.xr.addEventListener('sessionstart', async () => {
+        const session   = scene.renderer.xr.getSession();
+        const viewerRef = await session.requestReferenceSpace('viewer');
+        const hitSrc    = await session.requestHitTestSource({space: viewerRef});
+
+        scene.addEventListener('frame', () => {
+          const frame = scene.frame;
+          if (!frame) return;
+
+          const refSpace = scene.renderer.xr.getReferenceSpace();
+          const hits = frame.getHitTestResults(hitSrc);
+          if (hits.length === 0) return;
+
+          const pose = hits[0].getPose(refSpace);
+          cube.object3D.position.copy(pose.transform.position);
+          cube.object3D.quaternion.copy(pose.transform.orientation);
+          cube.setAttribute('visible', true);
+        });
+      });
+    </script>
+  </a-scene>
+</body>
+</html>
